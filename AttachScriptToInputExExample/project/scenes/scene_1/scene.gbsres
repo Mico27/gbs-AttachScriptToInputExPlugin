@@ -1,0 +1,111 @@
+{
+  "_resourceType": "scene",
+  "id": "25e4aec0-85b0-44b8-8682-cad0d602a427",
+  "_index": 0,
+  "name": "Scene 1",
+  "backgroundId": "1e5f9d6a-bdbc-43e6-8c34-22f5bb5dea05",
+  "tilesetId": "",
+  "width": 20,
+  "height": 18,
+  "type": "TOPDOWN",
+  "colorModeOverride": "none",
+  "paletteIds": [],
+  "spritePaletteIds": [],
+  "collisions": "",
+  "autoFadeSpeed": 1,
+  "symbol": "scene_1",
+  "x": 176,
+  "y": 144,
+  "script": [
+    {
+      "command": "EVENT_TEXT_DRAW",
+      "args": {
+        "text": "Press B to run",
+        "x": 1,
+        "y": 1,
+        "location": "background"
+      },
+      "id": "39055ac9-59f5-41f7-815a-fa3615abe5af"
+    },
+    {
+      "command": "EVENT_SET_INPUT_SCRIPT",
+      "args": {
+        "input": [
+          "b"
+        ],
+        "override": true,
+        "__scriptTabs": "press"
+      },
+      "children": {
+        "true": [
+          {
+            "command": "EVENT_SET_INPUT_SCRIPT_EX",
+            "args": {
+              "input": [
+                "b"
+              ],
+              "__scriptTabs": "release"
+            },
+            "children": {
+              "onPressed": [
+                {
+                  "command": "EVENT_ACTOR_SET_MOVEMENT_SPEED",
+                  "args": {
+                    "actorId": "$self$",
+                    "speed": 2
+                  },
+                  "id": "9d706e2e-024c-4690-8931-bc5606cfe321"
+                },
+                {
+                  "command": "EVENT_SET_VALUE",
+                  "args": {
+                    "variable": "0",
+                    "value": {
+                      "type": "number",
+                      "value": 0
+                    }
+                  },
+                  "id": "977d5942-005f-4ee9-9b05-785c7926138a"
+                }
+              ],
+              "onHold": [
+                {
+                  "command": "EVENT_INC_VALUE",
+                  "args": {
+                    "variable": "0"
+                  },
+                  "id": "d4e4503d-8abf-44b2-8535-3261cdd40989"
+                }
+              ],
+              "onRelease": [
+                {
+                  "command": "EVENT_ACTOR_SET_MOVEMENT_SPEED",
+                  "args": {
+                    "actorId": "$self$",
+                    "speed": 1
+                  },
+                  "id": "dbc963c9-c184-4194-9377-e05f590f04c8"
+                },
+                {
+                  "command": "EVENT_TEXT_DRAW",
+                  "args": {
+                    "text": "Ran for $00$ frames     ",
+                    "x": 1,
+                    "y": 1,
+                    "location": "background"
+                  },
+                  "id": "d4ba7450-dd41-463d-92c0-cf056b560f70"
+                }
+              ]
+            },
+            "id": "a86ff9d2-c45d-4dcb-89fb-8e8af9a525e9"
+          }
+        ]
+      },
+      "id": "3efebd5f-5cc9-406d-bc4f-158493cf198a"
+    }
+  ],
+  "playerHit1Script": [],
+  "playerHit2Script": [],
+  "playerHit3Script": []
+}
