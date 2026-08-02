@@ -172,3 +172,36 @@ Multiple buttons are OR'd together. If all bits are zero (no buttons selected), 
 
 The standard **Attach Script to Button** event compiles to a VM instruction that registers a concurrent script callback. When the specified button transitions from not-held to held (a new-press edge), GB Studio's event system launches the registered script as a new concurrent thread. The EX event's compiled bytecode is the body of that thread — it receives no special arguments and simply runs as a normal script once triggered.
 
+---
+
+<!-- BANK0:BEGIN -->
+## Bank 0 (HOME) Usage
+
+Bank 0 is the 16 KB non-switchable ROM bank that the GB Studio engine core,
+the interrupt handlers and the GBDK runtime all share. Banked ROM is cheap
+(add another bank), bank 0 is not, so it is usually the first thing a project
+runs out of.
+
+| | Bytes |
+|---|---|
+| Bank 0 used by this plugin | **0** |
+| Bank 0 free with this plugin installed | **1,451** of 16,384 (91% used) |
+
+**This plugin costs nothing in bank 0.** All of its code lives in a switchable
+ROM bank; nothing it adds is resident in bank 0.
+
+<details><summary>How this was measured</summary>
+
+GB Studio 4.3.2, DMG target, default engine settings. Each module's bank 0
+contribution is the `A _HOME size` record that SDCC writes into its `.rel`
+object, summed over the engine sources this plugin provides. Stock sizes come
+from building projects whose only plugin ships no engine C, so every module in
+them is the untouched engine; two such builds were compared and agreed on all
+73 shared modules.
+
+The "free" figure is a stock project with this plugin and nothing else. Your
+own number will differ: other plugins, and any engine settings that change what
+the core compiles, move it independently of this plugin.
+
+</details>
+<!-- BANK0:END -->
