@@ -5,6 +5,11 @@
       "id": "0",
       "name": "RunningFrameCount",
       "symbol": "var_runningframecount"
+    },
+    {
+      "id": "1",
+      "name": "IsRunning",
+      "symbol": "var_isrunning"
     }
   ],
   "constants": []
