@@ -104,9 +104,10 @@ Implements a full press → hold loop → release input lifecycle. Must be place
 
 ## Memory Footprint
 
-- **WRAM added:** 0 bytes.
-- **SRAM added:** 0 bytes.
-- **ROM:** negligible — this is an events-only plugin with no engine code. Each use compiles a small amount of GBVM script into your project's script banks.
+This plugin ships no engine sources, so it has no fixed memory cost at all — confirmed by `measure_plugin_memory.js` against the stock GB Studio **4.3.0-e1** engine (report of 2026-08-13).
+
+- **Bank 0, WRAM, SRAM:** nothing. The plugin ships no engine sources at all.
+- **ROM:** the events compile plain GBVM script into your project's script banks — a few bytes per call. There is no fixed engine cost.
 
 ---
 
@@ -121,25 +122,9 @@ runs out of.
 | | Bytes |
 |---|---|
 | Bank 0 used by this plugin | **0** |
-| Bank 0 free with this plugin installed | **1,451** of 16,384 (91% used) |
 
-**This plugin costs nothing in bank 0.** All of its code lives in a switchable
-ROM bank; nothing it adds is resident in bank 0.
-
-<details><summary>How this was measured</summary>
-
-GB Studio 4.3.2, DMG target, default engine settings. Each module's bank 0
-contribution is the `A _HOME size` record that SDCC writes into its `.rel`
-object, summed over the engine sources this plugin provides. Stock sizes come
-from building projects whose only plugin ships no engine C, so every module in
-them is the untouched engine; two such builds were compared and agreed on all
-73 shared modules.
-
-The "free" figure is a stock project with this plugin and nothing else. Your
-own number will differ: other plugins, and any engine settings that change what
-the core compiles, move it independently of this plugin.
-
-</details>
+**This plugin costs nothing in bank 0.** Every one of its functions is compiled
+into a switchable ROM bank; nothing it adds is resident in bank 0.
 <!-- BANK0:END -->
 
 ## Changelog
