@@ -10,6 +10,11 @@
       "id": "1",
       "name": "IsRunning",
       "symbol": "var_isrunning"
+    },
+    {
+      "id": "2",
+      "name": "SeqTimeout",
+      "symbol": "var_seqtimeout"
     }
   ],
   "constants": []

@@ -18,12 +18,22 @@
   "y": 144,
   "script": [
     {
-      "command": "EVENT_TEXT_DRAW",
+      "command": "EVENT_UI_ALT_LOAD_FONT",
+      "args": {
+        "fontId": "4bd653f0-e08d-424e-9e5b-c1f3aaa21e47",
+        "offset": 8,
+        "length": 96,
+        "adjustFontMappingWithOffset": false,
+        "__collapse": true
+      },
+      "id": "c082da3d-f1f0-47d4-b33a-58786a1511ed"
+    },
+    {
+      "command": "EVENT_UI_ALT_DISPLAY_TEXT",
       "args": {
         "text": "Press B to run",
         "x": 1,
         "y": 1,
-        "location": "background",
         "__collapse": true
       },
       "id": "7e6e079f-9292-420f-9edb-91ce85bd3b02"
@@ -100,12 +110,11 @@
                   "id": "a97a2487-3883-445d-8b96-61bf71557210"
                 },
                 {
-                  "command": "EVENT_TEXT_DRAW",
+                  "command": "EVENT_UI_ALT_DISPLAY_TEXT",
                   "args": {
                     "text": "Ran for $00$ frames     ",
                     "x": 1,
-                    "y": 1,
-                    "location": "background"
+                    "y": 1
                   },
                   "id": "0259a715-0cbc-463c-8ca7-0eb5ca018e1c"
                 },
@@ -189,12 +198,11 @@
                   "id": "99fda7ca-6da1-4c6f-b24c-046627a595f3"
                 },
                 {
-                  "command": "EVENT_TEXT_DRAW",
+                  "command": "EVENT_UI_ALT_DISPLAY_TEXT",
                   "args": {
                     "text": "Ran for $00$ frames     ",
                     "x": 1,
-                    "y": 1,
-                    "location": "background"
+                    "y": 1
                   },
                   "id": "f3999ca5-df2f-4ebe-b75a-c190d162128e"
                 },

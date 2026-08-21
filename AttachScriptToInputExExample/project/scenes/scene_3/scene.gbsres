@@ -1,0 +1,201 @@
+{
+  "_resourceType": "scene",
+  "id": "6f1c4b21-2d55-4a63-9f0e-51b1a7c04d31",
+  "_index": 2,
+  "name": "Scene 3",
+  "backgroundId": "1e5f9d6a-bdbc-43e6-8c34-22f5bb5dea05",
+  "tilesetId": "",
+  "width": 20,
+  "height": 18,
+  "type": "TOPDOWN",
+  "colorModeOverride": "none",
+  "paletteIds": [],
+  "spritePaletteIds": [],
+  "collisions": "",
+  "autoFadeSpeed": 1,
+  "symbol": "scene_3",
+  "x": 608,
+  "y": 144,
+  "script": [
+    {
+      "command": "EVENT_UI_ALT_LOAD_FONT",
+      "args": {
+        "fontId": "4bd653f0-e08d-424e-9e5b-c1f3aaa21e47",
+        "offset": 8,
+        "length": 96,
+        "adjustFontMappingWithOffset": false,
+        "__collapse": true
+      },
+      "id": "153b9fd5-65b8-4a36-97d8-312550d8c1c5"
+    },
+    {
+      "command": "EVENT_UI_ALT_DISPLAY_TEXT",
+      "args": {
+        "text": "Hold A+B together",
+        "x": 1,
+        "y": 1
+      },
+      "id": "33ffc225-7330-4ea0-a472-9e640813550c"
+    },
+    {
+      "command": "EVENT_UI_ALT_DISPLAY_TEXT",
+      "args": {
+        "text": "Double tap DOWN",
+        "x": 1,
+        "y": 3
+      },
+      "id": "ee1d0af3-ecb1-410b-a03d-503065cad97f"
+    },
+    {
+      "command": "EVENT_SET_INPUT_SCRIPT",
+      "args": {
+        "input": [
+          "a",
+          "b"
+        ],
+        "override": false,
+        "__scriptTabs": "press",
+        "__collapse": false
+      },
+      "id": "a9fb1c74-f336-4132-a27e-7f4274c8bccf",
+      "children": {
+        "true": [
+          {
+            "command": "EVENT_SET_INPUT_SCRIPT_EX",
+            "args": {
+              "input": [
+                "a",
+                "b"
+              ],
+              "combine": true,
+              "doubleTap": false,
+              "tapWindow": {
+                "type": "number",
+                "value": 15
+              },
+              "__scriptTabs": "press"
+            },
+            "id": "dacbf3b6-9f2b-4565-b308-7170ba758a80",
+            "children": {
+              "onPressed": [
+                {
+                  "command": "EVENT_SET_VALUE",
+                  "args": {
+                    "variable": "0",
+                    "value": {
+                      "type": "number",
+                      "value": 0
+                    }
+                  },
+                  "id": "1de9d1fd-32f1-4fa6-96d4-01a0326d99e8"
+                },
+                {
+                  "command": "EVENT_UI_ALT_DISPLAY_TEXT",
+                  "args": {
+                    "text": "A+B pressed      ",
+                    "x": 1,
+                    "y": 5
+                  },
+                  "id": "15530751-7505-4950-9114-dc8419b4de38"
+                }
+              ],
+              "onHold": [
+                {
+                  "command": "EVENT_INC_VALUE",
+                  "args": {
+                    "variable": "0"
+                  },
+                  "id": "97b9e985-ff5e-40f4-ae8e-f7f7dab70c7c"
+                }
+              ],
+              "onRelease": [
+                {
+                  "command": "EVENT_UI_ALT_DISPLAY_TEXT",
+                  "args": {
+                    "text": "A+B held $00$f   ",
+                    "x": 1,
+                    "y": 5
+                  },
+                  "id": "49edc407-b4ec-4c7c-a706-dd3d000f2b07"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "command": "EVENT_SET_INPUT_SCRIPT",
+      "args": {
+        "input": [
+          "down"
+        ],
+        "override": false,
+        "__scriptTabs": "press",
+        "__collapse": false
+      },
+      "id": "305b4b9d-7623-4df9-8e8d-d2ef2e3c2250",
+      "children": {
+        "true": [
+          {
+            "command": "EVENT_SET_INPUT_SCRIPT_EX",
+            "args": {
+              "input": [
+                "down"
+              ],
+              "combine": false,
+              "doubleTap": true,
+              "tapWindow": {
+                "type": "number",
+                "value": 20
+              },
+              "__scriptTabs": "press"
+            },
+            "id": "123d843c-a682-4e21-97a3-95437b48b2a9",
+            "children": {
+              "onPressed": [
+                {
+                  "command": "EVENT_UI_ALT_DISPLAY_TEXT",
+                  "args": {
+                    "text": "Double tap DOWN! ",
+                    "x": 1,
+                    "y": 7
+                  },
+                  "id": "7f1718be-a8ee-4ed8-8a9b-51b580bd4d5b"
+                }
+              ],
+              "onHold": [],
+              "onRelease": [
+                {
+                  "command": "EVENT_UI_ALT_DISPLAY_TEXT",
+                  "args": {
+                    "text": "                 ",
+                    "x": 1,
+                    "y": 7
+                  },
+                  "id": "b508753d-87ab-4796-b5fc-92d5eb797551"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "command": "EVENT_FADE_IN",
+      "args": {
+        "speed": "2",
+        "__collapse": true
+      },
+      "id": "23d9f302-6f39-46ad-a218-ae845c78e58a"
+    },
+    {
+      "command": "EVENT_SCRIPT_UNLOCK",
+      "args": {},
+      "id": "85c8b191-5057-49bd-b064-f58cbcdd72da"
+    }
+  ],
+  "playerHit1Script": [],
+  "playerHit2Script": [],
+  "playerHit3Script": []
+}
