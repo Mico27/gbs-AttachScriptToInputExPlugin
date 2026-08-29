@@ -1,8 +1,15 @@
 # gbs-AttachScriptToInputExPlugin
 
-**Version 1.2.0 — Requires GB Studio ≥ 4.3.0**
+**Version 1.2.0. Requires GB Studio 4.3.0 or newer.**
 
-A GB Studio events-only plugin that extends the built-in **Attach Script to Button** event with three subscript phases: **On Press**, **On Hold**, and **On Release**, and adds button combinations, double tap detection and input sequence (combo) detection. The standard event fires once per button-down edge. This plugin adds a per-frame hold loop, a release callback, and the input pattern matching that would otherwise need hand written polling loops.
+Turns a button press into three scripts: **On Press**, **On Hold** which repeats every frame while
+the button is down, and **On Release**. It also detects button combinations, double taps and
+ordered input sequences.
+
+That covers a charged shot that builds while B is held, a run button, a crouch that ends when the
+player lets go, an A plus B special move, a double tap to dash, and a cheat code entered on the
+title screen. GB Studio's own **Attach Script to Button** fires once on the press and tells you
+nothing after that.
 
 ![image](https://github.com/user-attachments/assets/53ae20c3-201c-4e86-ad7f-5e81521f555b)
 
@@ -14,186 +21,279 @@ A GB Studio events-only plugin that extends the built-in **Attach Script to Butt
 2. [Project Setup](#project-setup)
 3. [Size Limits and Restrictions](#size-limits-and-restrictions)
 4. [Events Reference](#events-reference)
-5. [Memory Footprint](#memory-footprint)
-6. [Bank 0 (HOME) Usage](#bank-0-home-usage)
-7. [Changelog](#changelog)
+5. [FAQ](#faq)
+6. [Memory Footprint](#memory-footprint)
+7. [Bank 0 (HOME) Usage](#bank-0-home-usage)
+8. [Changelog](#changelog)
 
 ---
 
 ## Concepts
 
-### Standard input attachment vs extended
+### The three phases
 
-The built-in GB Studio **Attach Script to Button** event runs a script each time the specified button transitions from not-held to held (a press edge). The script it runs has no built-in awareness of whether the button is still held while it runs, or when the button is eventually released.
+**Attach Script To Button EX** goes **inside** the script of a standard **Attach Script to Button**
+event. The outer event launches it on the press, and the EX event then runs the full life of that
+press:
 
-The **Attach Script To Button EX** event is designed to be placed **inside** the subscript of a standard **Attach Script to Button** event. When the outer event fires on the press edge, the EX event's body implements a complete lifecycle:
+1. **On Press** runs once, when the press is confirmed.
+2. **On Hold** runs every frame for as long as the button stays down.
+3. **On Release** runs once, when the button comes up.
 
-1. **On Press** — runs once when the press is first confirmed.
-2. **On Hold** — runs every frame for as long as the button remains held, waiting one frame between iterations.
-3. **On Release** — runs once when the button is no longer held.
+### Reading the buttons
 
-### Physical vs edge-detected input
-
-Both events read the **raw current-frame joypad state** — which buttons are physically held right now — rather than the edge-detected value the input event system uses. They sample it once per frame and derive their own press edges from it, so they respond to the actual physical state regardless of what other input events are firing.
+Both events read which buttons are physically down this frame, and work out their own press moments
+from that. They are unaffected by what other input events are doing.
 
 ### Button combinations
 
-With **Button Combination** enabled the selected buttons stop meaning "any of these" and start meaning "all of these, and nothing else":
+With **Button Combination** on, the selected buttons mean "all of these together, and nothing
+else":
 
-- **On Press** only runs on the frame where every selected button is held at the same time. Buttons may be pressed one after the other, the event keeps waiting for the combination to be completed.
-- Pressing a button that is **not** part of the combination cancels the event before On Press ever runs.
-- Letting go of the whole combination before it is completed also cancels the event.
-- **On Hold** runs for as long as every button of the combination stays held. Buttons outside the combination are ignored at this point.
-- **On Release** runs as soon as **one** of the buttons of the combination is released.
+- **On Press** runs on the frame every selected button is down at once. They may be pressed one
+  after another, and the event keeps waiting.
+- Pressing a button outside the combination cancels the event before On Press runs.
+- Letting go of everything before the combination is complete also cancels it.
+- **On Hold** runs while every button of the combination stays down. Other buttons are ignored by
+  then.
+- **On Release** runs as soon as one of the combination's buttons comes up.
 
 ### Double tap
 
-With **Double Tap** enabled, the first press only arms the event. The button (or the whole combination) has to be released and pressed a second time within the **Double Tap Window** before **On Press** runs. If the second press does not arrive in time the event ends silently and no phase script runs at all. On Hold and On Release then follow the second press, so a double tap can be held down just like a single press.
+With **Double Tap** on, the first press only arms the event. The button, or the whole combination,
+has to be released and pressed again inside the **Double Tap Window** before **On Press** runs. A
+second press that never arrives ends the event quietly with no script run at all. On Hold and On
+Release then follow the second press, so a double tap can be held down like a normal press.
 
-### Input sequences (combos)
+### Input sequences
 
-The **Input Sequence EX** event waits for a list of button presses to be entered in order — a fighting game motion, a cheat code, a lock combination. Every step is a button (or a combination), matched on the frame it is pressed:
+**Input Sequence EX** waits for a list of presses in order: a fighting game motion, a cheat code, a
+combination lock. Each step is a button, or a combination, matched on the frame it goes down.
 
-- The **first** step waits forever, so the event can sit and listen for the sequence to start.
-- Every later step has to be entered within the **Step Timeout**, which is read again at the start of each step. Using a variable there means the window can be widened or tightened while the sequence is running, for example from the **On Step** script.
-- Pressing a button that does not belong to the current step fails the sequence immediately, as does letting a step time out.
-- **On Success** runs once the last step has been matched, **On Failure** runs on a wrong button or a timeout, and **On Step** runs after every matched input.
-- **Restart On Failure** turns the event into a permanent listener: after a failure it goes back to listening for the first step instead of ending. The input that caused the failure is tested against the first step first, so entering `UP UP DOWN` when the sequence is `UP UP` restarts correctly on the third press.
+- The **first** step waits forever, so the event can sit and listen for the sequence to begin.
+- Every later step has to arrive within the **Step Timeout**, which is read again at the start of
+  each step. Putting a variable there lets the window widen or tighten while the sequence runs, for
+  instance from the **On Step** script.
+- A button that does not belong to the current step fails the sequence at once, and so does a step
+  running out of time.
+- **On Success** runs after the last step matches, **On Failure** runs on a wrong button or a
+  timeout, and **On Step** runs after every match.
+- **Restart On Failure** turns the event into a permanent listener. After a failure it goes back to
+  waiting for the first step. The input that caused the failure is tested against the first step
+  first, so entering `UP UP DOWN` when the sequence is `UP UP` restarts correctly on the third
+  press.
 
-Buttons already held when the event starts count as freshly pressed, which is what makes the event work when it is placed inside an **Attach Script to Button** for the first button of the sequence.
+Buttons already down when the event starts count as freshly pressed, which is what makes it work
+inside an **Attach Script to Button** for the sequence's first button.
 
 ---
 
 ## Project Setup
 
-1. Copy the `AttachScriptToInputExPlugin` folder into your GB Studio project's `plugins/` directory. No engine files are modified.
-2. Add a standard **Attach Script to Button** event to any script (actor On Update, scene On Init, etc.).
-3. Inside that event's subscript, add an **Attach Script To Button EX** or an **Input Sequence EX** event.
-4. Set the **Button** field to the same button (or set of buttons) you used in the outer event. For a combination or a sequence, the outer event should list every button that is allowed to start it.
-5. Fill in the subscript tabs. Any tab can be left empty if that phase requires no action.
+1. Copy the `AttachScriptToInputExPlugin` folder into your project's `plugins` folder. No engine
+   files are changed.
+2. Add a standard **Attach Script to Button** event to any script, such as an actor's On Update or
+   a scene's On Init.
+3. Inside that event's script, add **Attach Script To Button EX** or **Input Sequence EX**.
+4. Set the **Button** field to the same button, or set of buttons, as the outer event. For a
+   combination or a sequence, the outer event should list every button that can start it.
+5. Fill in the tabs you need. Leave a tab empty when that phase does nothing.
 
-> ⚠️ **These events must be placed inside the subscript of a standard Attach Script to Button event.** They do not register their own input handler — they *are* the handler body. Placed outside an input attachment they simply run immediately when the script reaches them, not on button press.
+> **These events must sit inside a standard Attach Script to Button event.** They do not register
+> a handler of their own. They are the handler's body. Placed anywhere else they simply run when
+> the script reaches them.
 
-The `AttachScriptToInputExExample` project in this repository demonstrates every feature: scenes 1 and 2 use the press/hold/release lifecycle, scene 3 uses an `A+B` combination and a double tap on `DOWN`, and scene 4 uses a five step input sequence with a timeout variable that tightens after the first input.
+The `AttachScriptToInputExExample` project shows every feature. Scenes 1 and 2 use press, hold and
+release, scene 3 uses an A plus B combination and a double tap on DOWN, and scene 4 uses a five
+step sequence with a timeout variable that tightens after the first input.
 
 ### About the example project's text
 
-The example ships a second plugin, [UI Alt Display Text](https://github.com/Mico27/gbs-uiAltDisplayTextPlugin), and draws all of its on-screen text with **Alt Load and Display Text To Background Instantly** instead of the stock **Draw Text**. The stock renderer writes glyph pixels into the VWF tile buffer every time a line is drawn, which is wasteful for feedback that is redrawn on every button press; the Alt renderer only writes tile IDs to the tilemap, so a text update costs a handful of VRAM writes.
+The example also ships [UI Alt Display Text](https://github.com/Mico27/gbs-uiAltDisplayTextPlugin)
+and draws its on-screen text with **Alt Load and Display Text To Background Instantly**. The stock
+renderer rebuilds each letter's pixels every time a line is drawn, which is wasteful for feedback
+redrawn on every button press. The Alt renderer writes tile numbers only, so an update costs a
+handful of writes.
 
-Each scene's init script starts with an **Alt Load Font tiles** event that copies GBS Mono into VRAM tiles 8–103 (ASCII 32–127 are unique tiles 0–95 of the compiled font, the background itself only uses tiles 0–3, the UI frame sits at `0xC0` and the stock VWF buffer at `0xCC`). Only the event in Scene 1 has **Adjust font mapping with offset on compile** checked — that option rewrites the font's character-to-tile table globally at build time and may only be applied once per font per build, while the runtime tile copy still has to happen in every scene.
+Each scene's init script starts with **Alt Load Font tiles** copying GBS Mono into tiles 8 to 103.
+Only Scene 1's event has **Adjust font mapping with offset on compile** ticked, because that option
+rewrites the font's character table for the whole build and may be applied once per font. The tile
+copy itself still has to happen in every scene.
 
-Neither of the plugin's own events depends on this. Replace the Alt text events with stock **Draw Text** events and remove the `UIAltDisplayTextPlugin` folder if you only want the input handling.
+Neither of this plugin's events depends on that. Swap the Alt text events for stock **Draw Text**
+events and delete the `UIAltDisplayTextPlugin` folder if you only want the input handling.
 
 ---
 
 ## Size Limits and Restrictions
 
-### Must be nested inside Attach Script to Button
+### They must be nested inside Attach Script to Button
 
-These events do not register an input callback themselves. The outer standard event provides the edge-triggered launch; the EX events implement the lifecycle once launched. Without the outer wrapper, their bodies execute immediately as ordinary sequential script code.
+The outer event provides the press that launches them. Without it, their contents run as ordinary
+script code the moment the script reaches them.
 
-### On Hold runs at most once per frame
+### On Hold runs once per frame at most
 
-The hold loop waits one frame between iterations, so the On Hold script cannot execute more than once per frame — a minimum polling interval of roughly 16.7 ms at 60 fps. The same applies to every wait loop in these events: input is sampled once per frame.
+The hold loop waits a frame between passes, so On Hold runs at most 60 times a second. Every wait
+loop in these events samples the buttons once per frame.
 
-### The first hold iteration is two frames after the press
+### The first hold pass is two frames after the press
 
-One frame is also skipped after the On Press script completes, so the earliest On Hold execution happens two frames after the initial press detection.
+A frame is also skipped after the On Press script finishes, so the earliest On Hold is two frames
+after the press was detected.
 
-### An empty button selection matches all buttons
+### Selecting no buttons matches every button
 
-If no buttons are selected in a **Button** field, all buttons are matched. This is deliberate: matching nothing would make the event skip all its phases immediately. Because "any button" cannot be combined, **Button Combination** is ignored when no button is selected.
+An empty **Button** field matches all buttons, because matching nothing would make the event skip
+straight to the end. **Button Combination** is ignored in that case.
 
-### The script thread blocks for the duration of the event
+### The script is busy for the whole event
 
-While the button is held, the launched script thread is occupied by the hold loop. The outer **Attach Script to Button** event will not fire again for the same button until that thread terminates — that is, until the button is released and the On Release script completes. The same is true while a combination is being formed, while a double tap window is open, and for the whole duration of an input sequence. Plan accordingly for re-entrant input handling.
+While the button is held, the launched script is occupied by the hold loop, and the outer **Attach
+Script to Button** will not fire again for that button until it finishes, meaning until the button
+is released and On Release completes. The same holds while a combination is being formed, while a
+double tap window is open, and for the whole of an input sequence.
 
-With **Restart On Failure** enabled an input sequence only ends on success, so its thread stays resident until the sequence is completed.
+With **Restart On Failure** on, a sequence ends only on success, so its script stays resident until
+then.
 
 ### Very short presses are skipped
 
-If the button is already released by the time the launched script starts running, the whole event is skipped, including On Press and On Release.
+If the button is already up by the time the launched script starts, the whole event is skipped,
+On Press and On Release included.
 
-### A partly held combination waits indefinitely
+### A half-held combination waits forever
 
-While waiting for a combination to be completed, the event gives up when every button of the combination has been released or when a button outside the combination is pressed — but not on a timer. Holding one button of the combination forever keeps the event waiting forever. Use **Double Tap** or an input sequence if you need a time limit on the entry.
+While waiting for a combination, the event gives up when every one of its buttons is released, or
+when a button outside it is pressed. There is no timer. Holding one button of the combination keeps
+it waiting indefinitely. Use **Double Tap** or a sequence when you want a time limit.
 
 ### The first step of a sequence has no timeout
 
-The **Step Timeout** applies from the second step onwards. The first step waits for as long as it takes, which is what allows the event to be used as a permanent combo listener. A timeout of `0` disables the timeout for the later steps as well.
+**Step Timeout** applies from the second step on. The first waits as long as it takes, which is
+what makes a permanent combo listener possible. A timeout of `0` turns it off for the later steps
+too.
 
-### Sequences are limited to 12 steps
+### A sequence holds up to 12 steps
 
-**Sequence Length** accepts 1 to 12 inputs. The **On Step** script is compiled once and shared by every step, so its size does not grow with the sequence length.
+**Sequence Length** accepts 1 to 12. The **On Step** script is compiled once and shared by every
+step, so a longer sequence does not make it bigger.
 
 ---
 
 ## Events Reference
 
----
-
 ### Attach Script To Button EX
 
-**`EVENT_SET_INPUT_SCRIPT_EX`** — group: **Input**
+Group: **Input**.
 
-Implements a full press → hold loop → release input lifecycle, optionally gated behind a button combination and/or a double tap. Must be placed inside the subscript of a standard **Attach Script to Button** event.
+Runs a press, hold and release cycle, optionally behind a combination, a double tap, or both. Place
+it inside the script of a standard **Attach Script to Button** event.
 
 | Field | Default | Description |
 |---|---|---|
-| Button | B | The button(s) to monitor. Should match the button set on the outer **Attach Script to Button** event. |
-| Button Combination | off | When enabled every selected button must be held at the same time, and no other button may be held, before On Press runs. |
-| Double Tap | off | When enabled the button (or combination) must be released and pressed a second time before On Press runs. |
-| Double Tap Window | 15 | Frames allowed between the first press and the second press. Accepts a variable. Only shown when **Double Tap** is enabled. |
-| On Press | — | Script to run once when the press is confirmed. |
-| On Hold | — | Script to run every frame while the button remains held. |
-| On Release | — | Script to run once when the button is released. |
-
----
+| Button | B | The buttons to watch. Match the outer event's buttons. |
+| Button Combination | off | Every selected button must be down at once, with nothing else down, before On Press runs. |
+| Double Tap | off | The button, or combination, must be released and pressed again before On Press runs. |
+| Double Tap Window | 15 | Frames allowed between the two presses. Accepts a variable. Shown only with **Double Tap** on. |
+| On Press | none | Runs once when the press is confirmed. |
+| On Hold | none | Runs every frame while the button stays down. |
+| On Release | none | Runs once when the button comes up. |
 
 ### Input Sequence EX
 
-**`EVENT_INPUT_SEQUENCE_EX`** — group: **Input**
+Group: **Input**.
 
-Waits for a list of button presses to be entered in order and branches on success or failure. Must be placed inside the subscript of a standard **Attach Script to Button** event, or used in a script that is free to block.
+Waits for a list of presses in order and branches on success or failure. Place it inside the script
+of a standard **Attach Script to Button** event, or anywhere a script is free to wait.
 
 | Field | Default | Description |
 |---|---|---|
-| Sequence Length | 3 | Number of inputs that make up the sequence, 1 to 12. |
-| Step Timeout | 30 | Frames allowed to enter each input after the first one. `0` means no timeout. Accepts a variable, and is read again at the start of every step so the value can change while the sequence is running. |
-| Restart On Failure | off | When enabled the sequence starts listening again from the first input after a failure instead of ending. The failing input is still tested against the first step. |
-| Step *n* | A | Button that has to be pressed for step *n*. Leaving it empty accepts any button. |
-| Step *n* Combination | off | When enabled every button selected for step *n* must be held at the same time, and the step only matches on the frame the combination is completed. |
-| On Success | — | Script to run once the whole sequence has been entered. |
-| On Failure | — | Script to run when a wrong button is pressed or a step times out. |
-| On Step | — | Script to run after every matched input, before the timeout of the next step is read. |
+| Sequence Length | 3 | How many inputs make up the sequence, 1 to 12. |
+| Step Timeout | 30 | Frames allowed for each input after the first. `0` means no limit. Accepts a variable, read again at every step, so it can change while the sequence runs. |
+| Restart On Failure | off | After a failure, go back to waiting for the first input instead of ending. The failing input is still tested against the first step. |
+| Step *n* | A | The button for step *n*. Left empty, any button matches. |
+| Step *n* Combination | off | Every button selected for step *n* must be down at once, and the step matches on the frame that happens. |
+| On Success | none | Runs once the whole sequence is entered. |
+| On Failure | none | Runs on a wrong button or a timeout. |
+| On Step | none | Runs after every matched input, before the next step's timeout is read. |
+
+---
+
+## FAQ
+
+**How do I make a charged shot that builds while B is held?**
+Put **Attach Script To Button EX** inside an **Attach Script to Button** for B. Reset a charge
+variable in **On Press**, add to it in **On Hold**, and fire based on its value in **On Release**.
+
+**How do I detect a special move on A plus B?**
+Set the outer event to A and B, then in the EX event select both buttons and tick **Button
+Combination**. On Press runs on the frame both are down together.
+
+**How do I add a double tap to dash?**
+Tick **Double Tap** and set the button to a direction. Set **Double Tap Window** to about 15 frames
+to start with, and adjust to taste.
+
+**How do I add a cheat code?**
+Use **Input Sequence EX** with a step per button, and put the reward in **On Success**. Tick
+**Restart On Failure** so it keeps listening on the title screen.
+
+**Nothing happens when I add these events.**
+They have to sit inside a standard **Attach Script to Button** event. On their own they run
+immediately, as normal script steps.
+
+**My button script does not fire again while the button is held.**
+That is by design. The script stays busy for the whole press. It becomes available again once the
+button is released and **On Release** has finished.
+
+**How often does On Hold run?**
+Once per frame at most, so 60 times a second. The first pass is two frames after the press.
+
+**How do I put a time limit on a combination?**
+Combinations have no timer of their own. Use **Double Tap**, or an input sequence with a **Step
+Timeout**.
+
+**Can the timeout change partway through a sequence?**
+Yes. Put a variable in **Step Timeout** and change it from **On Step**. The value is read again at
+the start of every step, so the first input can be generous and later ones tight.
+
+**Can I use a directional input in a sequence, like a quarter circle?**
+Yes. Give each step the direction it needs, and use per-step combinations for diagonals.
+
+**Does it cost ROM?**
+Only for the events you use, a few bytes each. There is no fixed cost, and no engine files are
+changed.
 
 ---
 
 ## Memory Footprint
 
-This plugin ships no engine sources, so it has no fixed memory cost at all — confirmed by `measure_plugin_memory.js` against the stock GB Studio **4.3.0-e1** engine (report of 2026-08-13).
+This plugin ships no engine code, so it has no fixed cost. Measured against the stock GB Studio
+**4.3.0-e1** engine, report of 2026-08-13.
 
-- **Bank 0, WRAM, SRAM:** nothing. The plugin ships no engine sources at all.
-- **ROM:** the events compile plain GBVM script into your project's script banks — a few bytes per call. There is no fixed engine cost.
+- **Bank 0, WRAM, SRAM:** nothing.
+- **ROM:** the events compile a few bytes of script per call into your project. There is no fixed
+  cost.
 
-Both events use script locals only, no globals: **Attach Script To Button EX** reserves 1 local (2 with **Double Tap**), and **Input Sequence EX** reserves 3 locals, plus 1 for the step timeout and 1 more when an **On Step** script is used.
+Both events use script-local storage and no global variables. **Attach Script To Button EX** takes
+1 local, or 2 with **Double Tap**. **Input Sequence EX** takes 3, plus 1 for the step timeout and 1
+more when an **On Step** script is used.
 
 ---
 
 <!-- BANK0:BEGIN -->
 ## Bank 0 (HOME) Usage
 
-Bank 0 is the 16 KB non-switchable ROM bank that the GB Studio engine core,
-the interrupt handlers and the GBDK runtime all share. Banked ROM is cheap
-(add another bank), bank 0 is not, so it is usually the first thing a project
-runs out of.
+Bank 0 is the 16 KB fixed ROM bank shared by the GB Studio engine core, the
+interrupt handlers and the GBDK runtime. Extra banked ROM is cheap to add,
+bank 0 is not, so bank 0 is usually the first thing a project runs out of.
 
 | | Bytes |
 |---|---|
 | Bank 0 used by this plugin | **0** |
 
-**This plugin costs nothing in bank 0.** Every one of its functions is compiled
-into a switchable ROM bank; nothing it adds is resident in bank 0.
+**This plugin costs nothing in bank 0.** Everything it adds is compiled into a
+switchable ROM bank.
 <!-- BANK0:END -->
 
 ## Changelog
@@ -201,14 +301,18 @@ into a switchable ROM bank; nothing it adds is resident in bank 0.
 Grouped by the date each change was merged into the official
 [gb-studio-plugins](https://github.com/gb-studio-dev/gb-studio-plugins) repository.
 
-Only bug fixes, new features and feature changes are listed. Engine version
-bumps, patch regeneration, packaging fixes and documentation edits are omitted.
+Only bug fixes, new features and feature changes are listed. Engine version bumps, patch
+regeneration, packaging fixes and documentation edits are omitted.
 
 ### 2026-08-20
 
-- Added a **Button Combination** option to **Attach Script To Button EX**: On Press only runs once every selected button is held at the same time and no other button is held, On Hold runs while the combination stays formed and On Release runs as soon as one of its buttons is released.
-- Added a **Double Tap** option with an editable window to **Attach Script To Button EX**, usable on its own or together with a combination.
-- Added the **Input Sequence EX** event: up to 12 ordered inputs with per-step combinations, a step timeout that can be driven by a variable and changed while the sequence runs, On Success / On Failure / On Step scripts and an optional restart on failure.
+- Added **Button Combination** to **Attach Script To Button EX**. On Press runs once every selected
+  button is down at the same time with nothing else down, On Hold runs while the combination holds,
+  and On Release runs as soon as one of its buttons comes up.
+- Added **Double Tap**, with an editable window, usable on its own or with a combination.
+- Added **Input Sequence EX**: up to 12 ordered inputs with per-step combinations, a step timeout
+  that can come from a variable and change while the sequence runs, On Success, On Failure and
+  On Step scripts, and an optional restart on failure.
 
 ### 2025-04-23
 
